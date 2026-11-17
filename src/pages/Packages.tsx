@@ -33,6 +33,7 @@ export default function PackagesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Package Name</TableHead>
+                <TableHead>Devices</TableHead>
                 <TableHead>Price (KES)</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Bandwidth (D/U)</TableHead>
@@ -44,10 +45,16 @@ export default function PackagesPage() {
               {MOCK_PACKAGES.map((pkg) => (
                 <TableRow key={pkg.id}>
                   <TableCell className="font-medium text-slate-900">{pkg.name}</TableCell>
+                  <TableCell>{pkg.device_limit}</TableCell>
                   <TableCell>{pkg.price}</TableCell>
                   <TableCell>
-                    {pkg.duration_seconds === 3600 ? '1 Hour' : 
-                     pkg.duration_seconds === 604800 ? '7 Days' : '30 Days'}
+                    {pkg.duration_seconds === 3600
+                      ? '1 Hour'
+                      : pkg.duration_seconds === 345600
+                        ? '4 Days'
+                        : pkg.duration_seconds === 2592000
+                          ? '30 Days'
+                          : `${Math.round(pkg.duration_seconds / 86400)} Days`}
                   </TableCell>
                   <TableCell>
                     <span className="text-xs font-medium text-blue-600">{pkg.download_limit_mbps}M</span>

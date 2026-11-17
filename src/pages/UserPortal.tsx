@@ -24,9 +24,25 @@ import {
   DialogDescription,
   DialogFooter
 } from '@/components/ui/dialog';
-import { MOCK_PACKAGES } from '@/lib/mock-data';
+import { MOCK_PACKAGES, MOCK_PROFILES } from '@/lib/mock-data';
+import {
+  applyConnect,
+  decideDeviceConnect,
+  type HotspotDevice,
+} from '@/lib/hotspot-devices';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
+
+/** Demo store: account codes with an active multi-device subscription after payment. */
+const ACTIVE_ACCOUNTS: Record<
+  string,
+  { packageId: string; devices: HotspotDevice[] }
+> = {
+  SHANICE: {
+    packageId: '2', // 4days unlimited — shared, device_limit=2
+    devices: [],
+  },
+};
 
 export default function UserPortal() {
   const [phone, setPhone] = useState('');
@@ -34,6 +50,12 @@ export default function UserPortal() {
   const [isPaying, setIsPaying] = useState(false);
   const [step, setStep] = useState<'landing' | 'profile' | 'packages'>('landing');
   const [isOnline, setIsOnline] = useState(false);
+  const [accountCode, setAccountCode] = useState('');
+  const [deviceMac, setDeviceMac] = useState('');
+  const [accountDevices, setAccountDevices] = useState<Record<string, HotspotDevice[]>>({
+    SHANICE: [],
+  });
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   const handleMpesaPay = () => {
     if (!phone) {
@@ -44,18 +66,66 @@ export default function UserPortal() {
     // Simulate STK Push
     setTimeout(() => {
       setIsPaying(false);
+      const paidPkg = selectedPkg;
       setSelectedPkg(null);
       toast.success('STK Push sent to your phone. Enter PIN to complete.');
       
-      // Simulate payment confirmation
+      // Simulate payment confirmation + Hotspot activation with package device_limit
       setTimeout(() => {
+        const code =
+          MOCK_PROFILES.find((p) => p.phone_number.endsWith(phone.replace(/\D/g, '').slice(-9)))
+            ?.account_code ||
+          accountCode ||
+          'SHANICE';
+        const key = code.toUpperCase();
+        setAccountDevices((prev) => ({ ...prev, [key]: prev[key] ?? [] }));
+        ACTIVE_ACCOUNTS[key] = {
+          packageId: paidPkg?.id || '2',
+          devices: ACTIVE_ACCOUNTS[key]?.devices ?? [],
+        };
         setIsOnline(true);
-        toast.success('Payment confirmed! You are now online.', {
-          icon: <Wifi className="h-4 w-4 text-green-600" />,
-          duration: 5000,
-        });
+        toast.success(
+          `Payment confirmed! Account ${key} active for up to ${paidPkg?.device_limit ?? 2} shared devices.`,
+          {
+            icon: <Wifi className="h-4 w-4 text-green-600" />,
+            duration: 5000,
+          }
+        );
       }, 5000);
     }, 2000);
+  };
+
+  const handleAccountConnect = () => {
+    setConnectError(null);
+    const key = accountCode.trim().toUpperCase();
+    if (!key) {
+      setConnectError('Enter your Username / Account Code.');
+      return;
+    }
+    const mac = deviceMac.trim() || 'AA:BB:CC:DD:EE:01';
+    const account = ACTIVE_ACCOUNTS[key];
+    if (!account) {
+      setConnectError(
+        'You do not have an active package. Please select and purchase a package to continue.'
+      );
+      return;
+    }
+    const pkg = MOCK_PACKAGES.find((p) => p.id === account.packageId);
+    const devices = accountDevices[key] ?? account.devices;
+    const decision = decideDeviceConnect(devices, mac, pkg?.device_limit ?? 1);
+    if (!decision.allowed) {
+      setConnectError(decision.reason);
+      return;
+    }
+    const next = applyConnect(devices, mac);
+    setAccountDevices((prev) => ({ ...prev, [key]: next }));
+    account.devices = next;
+    setIsOnline(true);
+    toast.success(
+      decision.action === 'reuse'
+        ? 'Reconnected — no extra device slot used.'
+        : `Connected (${next.filter((d) => d.is_active).length}/${pkg?.device_limit} devices).`
+    );
   };
 
   return (
@@ -95,7 +165,9 @@ export default function UserPortal() {
                     <Wifi className="h-10 w-10 animate-pulse" />
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">You are Online</h2>
-                  <p className="mt-2 text-slate-500">Your "Weekly Pro" package is active.</p>
+                  <p className="mt-2 text-slate-500">
+                    Your &quot;4days unlimited&quot; package is active (up to 2 shared devices).
+                  </p>
                   
                   <div className="mt-8 grid w-full max-w-md gap-4 grid-cols-2">
                     <div className="rounded-xl border bg-slate-50 p-4">
@@ -129,7 +201,13 @@ export default function UserPortal() {
                   <Card key={pkg.id} className="group flex flex-col overflow-hidden transition-all hover:shadow-lg">
                     <CardHeader className="bg-slate-50 pb-8">
                       <Badge className="mb-2 w-fit bg-blue-100 text-blue-700 hover:bg-blue-100">
-                        {pkg.duration_seconds === 3600 ? 'Hourly' : pkg.duration_seconds === 604800 ? 'Weekly' : 'Monthly'}
+                        {pkg.duration_seconds === 3600
+                          ? 'Hourly'
+                          : pkg.duration_seconds === 345600
+                            ? '4 Days'
+                            : pkg.duration_seconds === 2592000
+                              ? 'Monthly'
+                              : 'Multi-day'}
                       </Badge>
                       <CardTitle className="text-2xl font-bold">{pkg.name}</CardTitle>
                       <CardDescription>{pkg.description}</CardDescription>
@@ -149,7 +227,9 @@ export default function UserPortal() {
                         </li>
                         <li className="flex items-center gap-3 text-sm text-slate-600">
                           <Smartphone className="h-4 w-4 text-blue-600" />
-                          Single Device Only
+                          {pkg.device_limit > 1
+                            ? `Up to ${pkg.device_limit} Devices`
+                            : 'Single Device Only'}
                         </li>
                       </ul>
                     </CardContent>
@@ -165,6 +245,47 @@ export default function UserPortal() {
                   </Card>
                 ))}
               </div>
+
+              {/* Username / Account Code connect (shared multi-device package) */}
+              <Card className="border-blue-100 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Username / Account Code</CardTitle>
+                  <CardDescription>
+                    Shared package: connect another device with your paid account code.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="account-code">Username / Account Code</Label>
+                    <Input
+                      id="account-code"
+                      placeholder="e.g. SHANICE"
+                      value={accountCode}
+                      onChange={(e) => setAccountCode(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="device-mac">Device MAC (optional demo)</Label>
+                    <Input
+                      id="device-mac"
+                      placeholder="AA:BB:CC:DD:EE:01"
+                      value={deviceMac}
+                      onChange={(e) => setDeviceMac(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleAccountConnect}
+                  >
+                    Connect
+                  </Button>
+                  {connectError && (
+                    <p className="text-sm text-red-600" role="alert">
+                      {connectError}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Support Card */}
               <Card className="border-none bg-slate-900 text-white">

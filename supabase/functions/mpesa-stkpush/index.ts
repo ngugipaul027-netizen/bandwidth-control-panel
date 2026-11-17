@@ -9,7 +9,7 @@ const MPESA_CALLBACK_URL = Deno.env.get('MPESA_CALLBACK_URL')
 
 serve(async (req) => {
   try {
-    const { amount, phone, packageId, profileId } = await req.json()
+    const { amount, phone, packageId, profileId, accountCode } = await req.json()
 
     // 1. Get Access Token
     const auth = btoa(`${MPESA_CONSUMER_KEY}:${MPESA_CONSUMER_SECRET}`)
@@ -39,7 +39,8 @@ serve(async (req) => {
         PartyB: MPESA_SHORTCODE,
         PhoneNumber: phone,
         CallBackURL: MPESA_CALLBACK_URL,
-        AccountReference: "ISP_BILLING",
+        // Bill reference must match captive-portal account code (e.g. SHANICE)
+        AccountReference: (accountCode || phone || "ISP_BILLING").toString().slice(0, 12),
         TransactionDesc: `Payment for package ${packageId}`
       })
     })
