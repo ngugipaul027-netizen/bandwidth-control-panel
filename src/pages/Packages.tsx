@@ -33,6 +33,7 @@ export default function PackagesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Package Name</TableHead>
+                <TableHead>Devices</TableHead>
                 <TableHead>Price (KES)</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Bandwidth (D/U)</TableHead>
@@ -44,6 +45,7 @@ export default function PackagesPage() {
               {MOCK_PACKAGES.map((pkg) => (
                 <TableRow key={pkg.id}>
                   <TableCell className="font-medium text-slate-900">{pkg.name}</TableCell>
+                  <TableCell>{pkg.device_limit}</TableCell>
                   <TableCell>{pkg.price}</TableCell>
                   <TableCell>
                     {pkg.duration_seconds === 3600 ? '1 Hour' : 

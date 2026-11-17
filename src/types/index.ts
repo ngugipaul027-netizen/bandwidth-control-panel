@@ -6,6 +6,8 @@ export interface Package {
   duration_seconds: number;
   download_limit_mbps: number;
   upload_limit_mbps: number;
+  /** Max simultaneous Hotspot devices (MikroTik shared-users). */
+  device_limit: number;
   is_active: boolean;
 }
 
@@ -13,9 +15,23 @@ export interface Profile {
   id: string;
   phone_number: string;
   full_name: string;
-  mac_address: string;
-  device_type: string;
+  /** Captive-portal Username / Account Code (e.g. SHANICE). */
+  account_code?: string;
+  /** @deprecated Prefer devices[] — single MAC treated the account as 1-device. */
+  mac_address?: string;
+  device_type?: string;
   created_at: string;
+}
+
+export interface Device {
+  id: string;
+  profile_id: string;
+  subscription_id?: string;
+  mac_address: string;
+  device_type?: string;
+  ip_address?: string;
+  is_active: boolean;
+  last_seen_at: string;
 }
 
 export interface Subscription {
