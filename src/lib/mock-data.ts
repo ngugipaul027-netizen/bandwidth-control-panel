@@ -14,13 +14,13 @@ export const MOCK_PACKAGES: Package[] = [
   },
   {
     id: '2',
-    name: 'Multi-Device (Sare Devices)',
-    description: '7 Days unlimited, up to 4 simultaneous devices',
+    name: '4days unlimited',
+    description: '4 Days UNLIMITED, shared package — up to 2 simultaneous devices',
     price: 100,
-    duration_seconds: 604800,
+    duration_seconds: 345600,
     download_limit_mbps: 10,
     upload_limit_mbps: 5,
-    device_limit: 4,
+    device_limit: 2,
     is_active: true,
   },
   {

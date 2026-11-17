@@ -50,16 +50,18 @@ ALTER TABLE public.devices ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own devices" ON public.devices
     FOR SELECT USING (auth.uid() = profile_id);
 
--- Seed / backfill: ensure KES 100 multi-device package has device_limit > 1
+-- Seed / backfill: KES 100 shared package = "4days unlimited" (2 devices, 4 days)
 UPDATE public.packages
-SET device_limit = 4,
-    name = CASE WHEN name = 'Weekly Pro' THEN 'Multi-Device (Sare Devices)' ELSE name END,
-    description = CASE
-      WHEN name = 'Weekly Pro' OR name = 'Multi-Device (Sare Devices)'
-        THEN '7 Days unlimited, up to 4 simultaneous devices'
-      ELSE description
-    END
-WHERE price = 100;
+SET device_limit = 2,
+    duration_seconds = 345600,
+    name = '4days unlimited',
+    description = '4 Days UNLIMITED, shared package — up to 2 simultaneous devices'
+WHERE price = 100
+  AND name IN (
+    'Weekly Pro',
+    'Multi-Device (Sare Devices)',
+    '4days unlimited'
+  );
 
 UPDATE public.packages SET device_limit = 1 WHERE price = 20 AND device_limit = 1;
 UPDATE public.packages SET device_limit = 6 WHERE price = 500;

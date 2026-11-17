@@ -48,8 +48,13 @@ export default function PackagesPage() {
                   <TableCell>{pkg.device_limit}</TableCell>
                   <TableCell>{pkg.price}</TableCell>
                   <TableCell>
-                    {pkg.duration_seconds === 3600 ? '1 Hour' : 
-                     pkg.duration_seconds === 604800 ? '7 Days' : '30 Days'}
+                    {pkg.duration_seconds === 3600
+                      ? '1 Hour'
+                      : pkg.duration_seconds === 345600
+                        ? '4 Days'
+                        : pkg.duration_seconds === 2592000
+                          ? '30 Days'
+                          : `${Math.round(pkg.duration_seconds / 86400)} Days`}
                   </TableCell>
                   <TableCell>
                     <span className="text-xs font-medium text-blue-600">{pkg.download_limit_mbps}M</span>

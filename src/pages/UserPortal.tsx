@@ -39,7 +39,7 @@ const ACTIVE_ACCOUNTS: Record<
   { packageId: string; devices: HotspotDevice[] }
 > = {
   SHANICE: {
-    packageId: '2', // Multi-Device (Sare Devices), device_limit=4
+    packageId: '2', // 4days unlimited — shared, device_limit=2
     devices: [],
   },
 };
@@ -85,7 +85,7 @@ export default function UserPortal() {
         };
         setIsOnline(true);
         toast.success(
-          `Payment confirmed! Account ${key} active for up to ${paidPkg?.device_limit ?? 4} devices.`,
+          `Payment confirmed! Account ${key} active for up to ${paidPkg?.device_limit ?? 2} shared devices.`,
           {
             icon: <Wifi className="h-4 w-4 text-green-600" />,
             duration: 5000,
@@ -166,7 +166,7 @@ export default function UserPortal() {
                   </div>
                   <h2 className="text-2xl font-bold text-slate-900">You are Online</h2>
                   <p className="mt-2 text-slate-500">
-                    Your &quot;Multi-Device (Sare Devices)&quot; package is active (up to 4 devices).
+                    Your &quot;4days unlimited&quot; package is active (up to 2 shared devices).
                   </p>
                   
                   <div className="mt-8 grid w-full max-w-md gap-4 grid-cols-2">
@@ -201,7 +201,13 @@ export default function UserPortal() {
                   <Card key={pkg.id} className="group flex flex-col overflow-hidden transition-all hover:shadow-lg">
                     <CardHeader className="bg-slate-50 pb-8">
                       <Badge className="mb-2 w-fit bg-blue-100 text-blue-700 hover:bg-blue-100">
-                        {pkg.duration_seconds === 3600 ? 'Hourly' : pkg.duration_seconds === 604800 ? 'Weekly' : 'Monthly'}
+                        {pkg.duration_seconds === 3600
+                          ? 'Hourly'
+                          : pkg.duration_seconds === 345600
+                            ? '4 Days'
+                            : pkg.duration_seconds === 2592000
+                              ? 'Monthly'
+                              : 'Multi-day'}
                       </Badge>
                       <CardTitle className="text-2xl font-bold">{pkg.name}</CardTitle>
                       <CardDescription>{pkg.description}</CardDescription>
